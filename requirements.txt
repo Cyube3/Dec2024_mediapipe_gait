@@ -156,7 +156,6 @@ sounddevice==0.5.1
     # via mediapipe
 streamlit==1.41.0
     # via -r requirements.in
-tempfile
 tenacity==9.0.0
     # via streamlit
 toml==0.10.2
