@@ -603,16 +603,15 @@ if uploaded_file is not None:
 
         # Display results
         st.write("""
-st.write("""
-The **Robinson Index (SI)** is a measure of gait asymmetry, specifically focusing on the step length of the affected and unaffected legs. (Formula Reference: Robinson et al., 1987)
-- \\( Xa \\): Step length of the **affected leg** (in meters).
-- \\( Xu \\): Step length of the **unaffected leg** (in meters).
+The **Robinson Index (SI)** is a measure of gait asymmetry, specifically focusing on the step length of the affected and unaffected legs. (Formula Reference: Robinson et al., 1987) 
+- \( Xa \): Step length of the **affected leg** (in meters).
+- \( Xu \): Step length of the **unaffected leg** (in meters).
 
 **Significance of SI**
-- \\( SI = 0 \\): Perfect symmetry; both legs have the same step length.
-- \\( SI > 0 \\): The affected leg has a longer step length than the unaffected leg (e.g., overcompensation).
-- \\( SI < 0 \\): The affected leg has a shorter step length than the unaffected leg (e.g., injury or reduced mobility).
-- **Magnitude of SI**: Larger values indicate greater asymmetry and more pronounced gait imbalance. Values close to 0 indicate normal variations.
+- **\( SI = 0 \):** Perfect symmetry; both legs have the same step length.
+- **\( SI > 0 \):** The affected leg has a longer step length than the unaffected leg (e.g. overcompensation).
+- **\( SI < 0 \):** The affected leg has a shorter step length than the unaffected leg (e.g. injury or reduced mobility).
+- **Magnitude of SI:** Larger values indicate greater asymmetry and more pronounced gait imbalance. Values close to 0 indicate normal variations.
 """)
         st.latex(r"Robinson~Index~SI = 100 \times \frac{X_a - X_u}{X_u}")
         st.write(f"## **Robinson Index (SI):** {SI:.2f}")
