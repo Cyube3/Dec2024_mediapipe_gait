@@ -43,8 +43,7 @@ def smooth_angles(angles, smoothing_factor=5):
     return spline(frame_numbers)
 
 # Main function to process the video and analyze gait
-@st.cache_data
-def process_video(input_path, output_path, output_path2, _uploaded_file_hash):
+def process_video(input_path, output_path, output_path2):
     mp_pose = mp.solutions.pose
     pose = mp_pose.Pose(smooth_landmarks=True)
 
@@ -261,7 +260,6 @@ st.write("The most accurate results shall be obtained from an ideal video contai
 uploaded_file = st.file_uploader("Upload an MP4 File Containing a Person Walking.", type=["mp4"])
 
 if uploaded_file is not None:
-    uploaded_file_hash = hash(uploaded_file.getvalue())
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as input_tmp:
         input_tmp.write(uploaded_file.read())
         input_video_path = input_tmp.name
@@ -273,7 +271,7 @@ if uploaded_file is not None:
         output_video_path2 = output_tmp2.name
 
     RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data, final_output_path, final_output_path2 = process_video(
-        input_video_path, output_video_path, output_video_path2, uploaded_file_hash
+        input_video_path, output_video_path, output_video_path2
     )
 
     if RTOEy is not None:
