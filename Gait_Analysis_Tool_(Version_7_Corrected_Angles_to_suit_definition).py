@@ -199,10 +199,9 @@ def process_video(input_path, output_path, output_path2):
         out2.write(frame2)
         i += 1
 
-    st.write(f"Total frames processed: {frame_count}")
-    st.write(f"Frames with landmarks: {len(frames_with_landmarks)}")
-    st.write(f"Video 1 size: {os.path.getsize(output_path)} bytes")
-    st.write(f"Video 2 size: {os.path.getsize(output_path2)} bytes")
+    st.write("To check that the videos have been processed successfully, ensure that there are some numbers for the sizes of the output videos below:"
+    st.write(f"Output Video 1 size: {os.path.getsize(output_path)} bytes")
+    st.write(f"Output Video 2 size: {os.path.getsize(output_path2)} bytes")
 
     angles_data = pd.DataFrame(angles_data)
     cap.release()
