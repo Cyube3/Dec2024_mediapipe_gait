@@ -12,6 +12,7 @@ import tempfile # To handle temporary file storage
 
 ###### SECTION I: COMPUTER VISION -MEDIAPIPE POSE CODE BASE ######
 # Function to detect and replace sudden jumps in the signal data
+@st.cache_data
 def replace_jump(signal, threshold):
     for n in range(1, len(signal)):
         if n >= 0 and n < len(signal) - 1:
@@ -36,6 +37,7 @@ def calculate_angle(a, b, c):
     return angle
 
 # Function to smooth a sequence of angles using spline interpolation
+@st.cache_data
 def smooth_angles(angles, smoothing_factor=5):
     frame_numbers = np.array(range(len(angles)))
     spline = UnivariateSpline(frame_numbers, angles, k=5, s=smoothing_factor)
@@ -216,7 +218,7 @@ def process_video(input_path, output_path, output_path2):
         return None, None, None, None, None, None, None, None
 
 ###### SECTION II: DATA WRANGLING ######
-
+@st.cache_data
 def fourier_filter(data, sampling_freq, critical_freq):
     # Fourier Transform
     N = len(data)
@@ -231,6 +233,7 @@ def fourier_filter(data, sampling_freq, critical_freq):
     return filtered_data
 
 # Function to extract peaks
+@st.cache_data
 def extract_peaks(data):
     # Find the indices of peaks
     peak_indices, _ = sps.find_peaks(data)
@@ -239,6 +242,7 @@ def extract_peaks(data):
     return peaks
 
 # Function to extract troughs
+@st.cache_data
 def extract_troughs(data):
     # Find the indices of troughs by inverting the data
     trough_indices, _ = sps.find_peaks(-data)
