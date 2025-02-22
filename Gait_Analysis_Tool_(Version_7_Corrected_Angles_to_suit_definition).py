@@ -9,6 +9,7 @@ from scipy.interpolate import UnivariateSpline
 from scipy.fftpack import fft, ifft
 import scipy.signal as sps
 import tempfile # To handle temporary file storage
+import ffmpeg
 
 ###### SECTION I: COMPUTER VISION -MEDIAPIPE POSE CODE BASE ######
 # Function to detect and replace sudden jumps in the signal data
