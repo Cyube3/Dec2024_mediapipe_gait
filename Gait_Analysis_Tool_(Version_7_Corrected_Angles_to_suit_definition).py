@@ -1,3 +1,4 @@
+import os
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -349,17 +350,33 @@ if uploaded_file is not None:
 
     # Display the processed video
     st.subheader("Processed Video with all Pose Landmarks")
-    if output_video_path is not None:
-        st.video(output_video_path)
+    if os.path.exists(output_video_path):
+        with open(output_video_path, "rb") as f:
+            video_bytes = f.read()
+        st.write("Click the button below to download the processed video.")
+        st.download_button(
+            label="Download Video with All Pose Landmarks",
+            data=video_bytes,
+            file_name="processed_video_landmarks.mp4",
+            mime="video/mp4"
+        )
     else:
-        st.error
+        st.error("Processed video (landmarks) not generated correctly.")
 
     st.subheader("Processed Video with Noise Corrected")
     st.write('Frames where landmarks are not detected are removed from the video.')
-    if output_video_path is not None:
-        st.video(output_video_path2)
+    if os.path.exists(output_video_path2):
+        with open(output_video_path2, "rb") as f:
+            video_bytes2 = f.read()
+        st.write("Click the button below to download the processed video.")
+        st.download_button(
+            label="Download Video with Noise Corrected",
+            data=video_bytes2,
+            file_name="processed_video_noise_corrected.mp4",
+            mime="video/mp4"
+        )
     else:
-        st.error
+        st.error("Processed video (noise corrected) not generated correctly.")
 
     st.subheader("Right Toe Y-Coordinate Analysis")
     st.write('Further analysis by tracking movement of the right toe.')
