@@ -11,29 +11,32 @@ import scipy.signal as sps
 import tempfile # To handle temporary file storage
 
 ###### SECTION I: COMPUTER VISION -MEDIAPIPE POSE CODE BASE ######
+# Cache the MediaPipe Pose model as a resource
+@st.cache_resource
+def initialize_pose():
+    mp_pose = mp.solutions.pose
+    return mp_pose.Pose(smooth_landmarks=True)
+
 # Function to detect and replace sudden jumps in the signal data
 @st.cache_data
-def replace_jump(signal, threshold):
+def replace_jump(signal, threshold=1.5):
+    signal = np.array(signal)  # Ensure input is a numpy array for caching
     for n in range(1, len(signal)):
         if n >= 0 and n < len(signal) - 1:
-            # If a jump is detected based on the threshold, interpolate the value
             if np.abs(signal[n] - signal[n - 1]) > threshold * np.abs(signal[n + 1] - signal[n - 1]):
                 previous_value = signal[n - 1]
                 next_value = signal[n + 1]
                 interpolated_value = (previous_value + next_value) / 2
-                signal[n] = interpolated_value  # Replace the jump value with the interpolated value
+                signal[n] = interpolated_value
     return signal
 
 # Function to calculate the angle between three points (a, b, c)
 def calculate_angle(a, b, c):
-    a = np.array(a)  # First point
-    b = np.array(b)  # Middle point
-    c = np.array(c)  # End point
-
-    # Calculate the angle in degrees
+    a = np.array(a)
+    b = np.array(b)
+    c = np.array(c)
     radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
     angle = 180 - np.abs(radians * 180.0 / np.pi)
-    
     return angle
 
 # Function to smooth a sequence of angles using spline interpolation
@@ -44,9 +47,9 @@ def smooth_angles(angles, smoothing_factor=5):
     return spline(frame_numbers)
 
 # Main function to process the video and analyze gait
+@st.cache_data(show_args=["input_path"])
 def process_video(input_path, output_path, output_path2):
-    mp_pose = mp.solutions.pose
-    pose = mp_pose.Pose(smooth_landmarks=True)
+    pose = initialize_pose()
 
     cap = cv2.VideoCapture(input_path)
     if not cap.isOpened():
@@ -139,19 +142,19 @@ def process_video(input_path, output_path, output_path2):
 
         out.write(bgr_image)
 
-    fRSHDx = replace_jump(RSHDx, 1.5)
-    fRSHDy = replace_jump(RSHDy, 1.5)
-    fRHIPx = replace_jump(RHIPx, 1.5)
-    fRHIPy = replace_jump(RHIPy, 1.5)
-    fRKNEx = replace_jump(RKNEx, 1.5)
-    fRKNEy = replace_jump(RKNEy, 1.5)
-    fRANKx = replace_jump(RANKx, 1.5)
-    fRANKy = replace_jump(RANKy, 1.5)
-    fRHEEx = replace_jump(RHEEx, 1.5)
-    fRHEEy = replace_jump(RHEEy, 1.5)
-    fRTOEx = replace_jump(RTOEx, 1.5)
-    fRTOEy = replace_jump(RTOEy, 1.5)
-    fLTOEy = replace_jump(LTOEy, 1.5)
+    fRSHDx = replace_jump(RSHDx)
+    fRSHDy = replace_jump(RSHDy)
+    fRHIPx = replace_jump(RHIPx)
+    fRHIPy = replace_jump(RHIPy)
+    fRKNEx = replace_jump(RKNEx)
+    fRKNEy = replace_jump(RKNEy)
+    fRANKx = replace_jump(RANKx)
+    fRANKy = replace_jump(RANKy)
+    fRHEEx = replace_jump(RHEEx)
+    fRHEEy = replace_jump(RHEEy)
+    fRTOEx = replace_jump(RTOEx)
+    fRTOEy = replace_jump(RTOEy)
+    fLTOEy = replace_jump(LTOEy)
 
     i = 0
     for i, frame2 in enumerate(frames_with_landmarks):
