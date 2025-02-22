@@ -254,7 +254,7 @@ def extract_troughs(data):
 
 st.title("Gait Analysis Using Computer Vision")
 st.write("This tool is powered by the ML solution MediaPipe Pose by Google.")
-st.write("Try to keep the video within 15 seconds to prevent the application from loading forever.")
+st.write("Try to keep the video within 15 seconds and use a resolution that is not too high as it may exceed available memory.")
 st.write("The most accurate results shall be obtained from an ideal video containing a person **visible from head to toe** walking on a **treadmill**/with the **camera following the person** while walking [Click to View an Example from YouTube](https://www.youtube.com/watch?v=Mol0lrRBy3g)")
 
 # File uploader
