@@ -43,7 +43,8 @@ def smooth_angles(angles, smoothing_factor=5):
     return spline(frame_numbers)
 
 # Main function to process the video and analyze gait
-def process_video(input_path, output_path, output_path2):
+@st.cache_data
+def process_video(input_path, output_path, output_path2, _uploaded_file_hash):
     mp_pose = mp.solutions.pose
     pose = mp_pose.Pose(smooth_landmarks=True)
 
@@ -260,6 +261,7 @@ st.write("The most accurate results shall be obtained from an ideal video contai
 uploaded_file = st.file_uploader("Upload an MP4 File Containing a Person Walking.", type=["mp4"])
 
 if uploaded_file is not None:
+    uploaded_file_hash = hash(uploaded_file.getvalue())
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as input_tmp:
         input_tmp.write(uploaded_file.read())
         input_video_path = input_tmp.name
@@ -271,7 +273,7 @@ if uploaded_file is not None:
         output_video_path2 = output_tmp2.name
 
     RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data, final_output_path, final_output_path2 = process_video(
-        input_video_path, output_video_path, output_video_path2
+        input_video_path, output_video_path, output_video_path2, uploaded_file_hash
     )
 
     if RTOEy is not None:
@@ -601,15 +603,16 @@ if uploaded_file is not None:
 
         # Display results
         st.write("""
-The **Robinson Index (SI)** is a measure of gait asymmetry, specifically focusing on the step length of the affected and unaffected legs. (Formula Reference: Robinson et al., 1987) 
-- \( Xa \): Step length of the **affected leg** (in meters).
-- \( Xu \): Step length of the **unaffected leg** (in meters).
+st.write("""
+The **Robinson Index (SI)** is a measure of gait asymmetry, specifically focusing on the step length of the affected and unaffected legs. (Formula Reference: Robinson et al., 1987)
+- \\( Xa \\): Step length of the **affected leg** (in meters).
+- \\( Xu \\): Step length of the **unaffected leg** (in meters).
 
 **Significance of SI**
-- **\( SI = 0 \):** Perfect symmetry; both legs have the same step length.
-- **\( SI > 0 \):** The affected leg has a longer step length than the unaffected leg (e.g. overcompensation).
-- **\( SI < 0 \):** The affected leg has a shorter step length than the unaffected leg (e.g. injury or reduced mobility).
-- **Magnitude of SI:** Larger values indicate greater asymmetry and more pronounced gait imbalance. Values close to 0 indicate normal variations.
+- \\( SI = 0 \\): Perfect symmetry; both legs have the same step length.
+- \\( SI > 0 \\): The affected leg has a longer step length than the unaffected leg (e.g., overcompensation).
+- \\( SI < 0 \\): The affected leg has a shorter step length than the unaffected leg (e.g., injury or reduced mobility).
+- **Magnitude of SI**: Larger values indicate greater asymmetry and more pronounced gait imbalance. Values close to 0 indicate normal variations.
 """)
         st.latex(r"Robinson~Index~SI = 100 \times \frac{X_a - X_u}{X_u}")
         st.write(f"## **Robinson Index (SI):** {SI:.2f}")
