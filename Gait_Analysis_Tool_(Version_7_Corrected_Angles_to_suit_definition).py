@@ -43,27 +43,28 @@ def smooth_angles(angles, smoothing_factor=5):
 
 # Main function to process the video and analyze gait
 def process_video(input_path, output_path, output_path2):
-    # Initialize MediaPipe Pose
     mp_pose = mp.solutions.pose
     pose = mp_pose.Pose(smooth_landmarks=True)
 
-    # Open the input video file
     cap = cv2.VideoCapture(input_path)
     if not cap.isOpened():
-        print("Error: Could not open video.")
-        return
+        st.error("Error: Could not open input video.")
+        return None, None, None, None, None, None
 
-    # Get video properties
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     
-    # Create VideoWriter objects for output videos
+    # Use XVID codec instead of mp4v
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
     out2 = cv2.VideoWriter(output_path2, fourcc, fps, (frame_width, frame_height))
 
-    # Lists to store raw and processed data
+    if not out.isOpened():
+        st.error(f"Error: VideoWriter failed to open for {output_path}")
+    if not out2.isOpened():
+        st.error(f"Error: VideoWriter failed to open for {output_path2}")
+
     angles_data = []
     RSHDx, RSHDy = [], []
     RHIPx, RHIPy = [], []
@@ -74,55 +75,46 @@ def process_video(input_path, output_path, output_path2):
     LTOEx, LTOEy = [], []
 
     frames_with_landmarks = []
+    frame_count = 0
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
+        frame_count += 1
 
-        # Convert the BGR image to RGB for processing with MediaPipe
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = pose.process(rgb_image)  # Process the RGB image
-        bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)  # Convert back to BGR for display
+        results = pose.process(rgb_image)
+        bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
 
         if results.pose_landmarks:
             frames_with_landmarks.append(frame)
-            # (Existing code to process landmarks and draw them on the frame)
             landmarks = results.pose_landmarks.landmark
-            mp.solutions.drawing_utils.draw_landmarks(
-                bgr_image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+            mp.solutions.drawing_utils.draw_landmarks(bgr_image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-            # Calculate joint angles for the right hip, knee, and ankle
             hip = calculate_angle(
                 [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y],
                 [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y],
                 [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
             )
-            
             knee = -1 * calculate_angle(
                 [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y],
                 [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y],
                 [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
             )
-
             ankle = -1 * calculate_angle(
                 [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y],
                 [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y],
                 [landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].y]
             )
 
-            # Overlay angles as text on the frame
             text_hip = f"Right Hip: {hip:.1f} degrees"
             text_knee = f"Right Knee: {knee:.1f} degrees"
             text_ankle = f"Right Ankle: {ankle:.1f} degrees"
-
-            rect_x, rect_y = 30, 10  # Top-left corner of the rectangle
-            rect_width, rect_height = 310, 80  # Rectangle width and height
-            cv2.rectangle(bgr_image, (rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height), (0, 0, 0), -1) # Background Rectangle
+            cv2.rectangle(bgr_image, (30, 10), (340, 90), (0, 0, 0), -1)
             cv2.putText(bgr_image, text_hip, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(bgr_image, text_knee, (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(bgr_image, text_ankle, (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-            # Store raw landmark data
             RSHDx.append(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x)
             RSHDy.append(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y)
             RHIPx.append(landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x)
@@ -137,7 +129,6 @@ def process_video(input_path, output_path, output_path2):
             RTOEy.append(landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].y)
             LTOEy.append(landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].y)
 
-            # Append calculated angles to the list
             angles_data.append({
                 'Time (s)': (cap.get(cv2.CAP_PROP_POS_FRAMES) - 1) / fps,
                 'Hip Flexion-Extension (deg)': hip,
@@ -145,10 +136,8 @@ def process_video(input_path, output_path, output_path2):
                 'Ankle Dorsiflexion-Plantarflexion (deg)': ankle
             })
 
-        # Write the processed frame with landmarks to the output video
         out.write(bgr_image)
 
-    # Apply the jump replacement filter to smooth out the data
     fRSHDx = replace_jump(RSHDx, 1.5)
     fRSHDy = replace_jump(RSHDy, 1.5)
     fRHIPx = replace_jump(RHIPx, 1.5)
@@ -162,103 +151,37 @@ def process_video(input_path, output_path, output_path2):
     fRTOEx = replace_jump(RTOEx, 1.5)
     fRTOEy = replace_jump(RTOEy, 1.5)
     fLTOEy = replace_jump(LTOEy, 1.5)
-    
-    # To create filtered output video
-    i = 0  # Frame counter
+
+    i = 0
     for i, frame2 in enumerate(frames_with_landmarks):
+        hip = calculate_angle([fRSHDx[i], fRSHDy[i]], [fRHIPx[i], fRHIPy[i]], [fRKNEx[i], fRKNEy[i]])
+        knee = calculate_angle([fRHIPx[i], fRHIPy[i]], [fRKNEx[i], fRKNEy[i]], [fRANKx[i], fRANKy[i]])
+        ankle = calculate_angle([fRKNEx[i], fRKNEy[i]], [fRANKx[i], fRANKy[i]], [fRHEEx[i], fRHEEy[i]])
 
-        # Calculate joint angles for the right hip, knee, and ankle
-        hip = calculate_angle(
-            [fRSHDx[i], fRSHDy[i]],  # Right shoulder
-            [fRHIPx[i], fRHIPy[i]],  # Right hip
-            [fRKNEx[i], fRKNEy[i]]   # Right knee
-        )
-
-        knee = calculate_angle(
-            [fRHIPx[i], fRHIPy[i]],  # Right hip
-            [fRKNEx[i], fRKNEy[i]],  # Right knee
-            [fRANKx[i], fRANKy[i]]   # Right ankle
-        )
-
-        ankle = calculate_angle(
-            [fRKNEx[i], fRKNEy[i]],  # Right knee
-            [fRANKx[i], fRANKy[i]],  # Right ankle
-            [fRHEEx[i], fRHEEy[i]]   # Right heel
-        )
-
-        # Overlay angles as text on the filtered frame
         text_hip = f"Right Hip: {hip:.1f} degrees"
         text_knee = f"Right Knee: {knee:.1f} degrees"
         text_ankle = f"Right Ankle: {ankle:.1f} degrees"
-
-        rect_x, rect_y = 30, 10  # Top-left corner of the rectangle
-        rect_width, rect_height = 310, 80  # Rectangle width and height
-        cv2.rectangle(frame2, (rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height), (0, 0, 0), -1)  # Background Rectangle
+        cv2.rectangle(frame2, (30, 10), (340, 90), (0, 0, 0), -1)
         cv2.putText(frame2, text_hip, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.putText(frame2, text_knee, (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.putText(frame2, text_ankle, (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-        # Define circle radius
         rad = 5
-
-        # Define circle and text overlay parameters for each joint
         joints = [
-            {
-                "name": f"{hip:.1f}",
-                "x": fRHIPx[i] * frame_width,
-                "y": fRHIPy[i] * frame_height,
-            },
-            {
-                "name": f"{knee:.1f}",
-                "x": fRKNEx[i] * frame_width,
-                "y": fRKNEy[i] * frame_height,
-            },
-            {
-                "name": f"{ankle:.1f}",
-                "x": fRANKx[i] * frame_width,
-                "y": fRANKy[i] * frame_height,
-            },
+            {"name": f"{hip:.1f}", "x": fRHIPx[i] * frame_width, "y": fRHIPy[i] * frame_height},
+            {"name": f"{knee:.1f}", "x": fRKNEx[i] * frame_width, "y": fRKNEy[i] * frame_height},
+            {"name": f"{ankle:.1f}", "x": fRANKx[i] * frame_width, "y": fRANKy[i] * frame_height},
         ]
-
-        # Draw circles and text overlays for each joint
         for joint in joints:
-            # Draw the circle
-            frame2 = cv2.circle(
-                frame2, (int(joint["x"]), int(joint["y"])), rad, (0, 255, 0), -1
-            )
+            cv2.circle(frame2, (int(joint["x"]), int(joint["y"])), rad, (0, 255, 0), -1)
+            rect_x, rect_y = int(joint["x"] + 10), int(joint["y"] - 25)
+            cv2.rectangle(frame2, (rect_x, rect_y), (rect_x + 50, rect_y + 20), (0, 0, 0), -1)
+            cv2.putText(frame2, joint["name"], (int(joint["x"] + 10), int(joint["y"] - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 
-            # Draw the text slightly above and to the right of the circle
-            text_offset_x = 10
-            text_offset_y = -10
-            # Background Rectangle
-            rect_x, rect_y = int(joint["x"] + text_offset_x), int(joint["y"] + text_offset_y - 15)  # Top-left corner of the rectangle
-            rect_width, rect_height = 50, 20  # Rectangle width and height
-            cv2.rectangle(frame2, (rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height), (0, 0, 0), -1)
-            # Text
-            frame2 = cv2.putText(
-                frame2,
-                joint["name"],
-                (int(joint["x"] + text_offset_x), int(joint["y"] + text_offset_y)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (255, 255, 255),
-                2,
-                cv2.LINE_AA,
-            )
-
-        # Draw lines connecting the circles (same as before)
-        # Define the joint connections
-        connections = [
-            (joints[0], joints[1]),  # Hip to Knee
-            (joints[1], joints[2]),  # Knee to Ankle
-        ]
-
+        connections = [(joints[0], joints[1]), (joints[1], joints[2])]
         for start, end in connections:
-            start_point = (int(start["x"]), int(start["y"]))
-            end_point = (int(end["x"]), int(end["y"]))
-            frame2 = cv2.line(frame2, start_point, end_point, (0, 255, 0), 2)
+            cv2.line(frame2, (int(start["x"]), int(start["y"])), (int(end["x"]), int(end["y"])), (0, 255, 0), 2)
 
-        # Define circle parameters for multiple landmarks
         circles = [
             {'radius': rad, 'center_x': fRSHDx[i] * frame_width, 'center_y': fRSHDy[i] * frame_height, 'color': (0, 255, 0)},
             {'radius': rad, 'center_x': fRHIPx[i] * frame_width, 'center_y': fRHIPy[i] * frame_height, 'color': (0, 255, 0)},
@@ -267,30 +190,49 @@ def process_video(input_path, output_path, output_path2):
             {'radius': rad, 'center_x': fRHEEx[i] * frame_width, 'center_y': fRHEEy[i] * frame_height, 'color': (0, 255, 0)},
             {'radius': rad, 'center_x': fRTOEx[i] * frame_width, 'center_y': fRTOEy[i] * frame_height, 'color': (0, 255, 0)},
         ]
-
-        # Draw circles on the image
         for circle in circles:
-            markedframe = cv2.circle(frame2, (int(circle['center_x']), int(circle['center_y'])), circle['radius'], circle['color'], -1)
-        
-        # Draw lines connecting the circles
+            cv2.circle(frame2, (int(circle['center_x']), int(circle['center_y'])), circle['radius'], circle['color'], -1)
         for j in range(0, len(circles) - 1):
-            start_point = (int(circles[j]['center_x']), int(circles[j]['center_y']))
-            end_point = (int(circles[j + 1]['center_x']), int(circles[j + 1]['center_y']))
-            markedframe = cv2.line(frame2, start_point, end_point, (0, 255, 0), 1)
+            cv2.line(frame2, (int(circles[j]['center_x']), int(circles[j]['center_y'])), 
+                     (int(circles[j + 1]['center_x']), int(circles[j + 1]['center_y'])), (0, 255, 0), 1)
 
-        # Write the processed frame with filtered landmarks to the output video
-        out2.write(markedframe)
-        i += 1  # Increment the frame counter
+        out2.write(frame2)
+        i += 1
 
-    # Convert data to a DataFrame for easier handling
+    # FFmpeg conversion to ensure playable MP4
+    def convert_to_mp4(input_file, output_file):
+        try:
+            stream = ffmpeg.input(input_file)
+            stream = ffmpeg.output(stream, output_file, vcodec='h264', acodec='aac', format='mp4')
+            ffmpeg.run(stream, overwrite_output=True)
+            return output_file
+        except ffmpeg.Error as e:
+            st.error(f"FFmpeg conversion failed: {e}")
+            return input_file
+
+    converted_output_path = output_path.replace('.mp4', '_converted.mp4')
+    converted_output_path2 = output_path2.replace('.mp4', '_converted.mp4')
+    convert_to_mp4(output_path, converted_output_path)
+    convert_to_mp4(output_path2, converted_output_path2)
+
+    st.write(f"Total frames processed: {frame_count}")
+    st.write(f"Frames with landmarks: {len(frames_with_landmarks)}")
+    st.write(f"Output video 1 size (before conversion): {os.path.getsize(output_path)} bytes")
+    st.write(f"Output video 2 size (before conversion): {os.path.getsize(output_path2)} bytes")
+    st.write(f"Converted video 1 size: {os.path.getsize(converted_output_path)} bytes")
+    st.write(f"Converted video 2 size: {os.path.getsize(converted_output_path2)} bytes")
+
     angles_data = pd.DataFrame(angles_data)
-
-    # Release resources
     cap.release()
     out.release()
     out2.release()
     cv2.destroyAllWindows()
-    return RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data
+
+    if not angles_data.empty:
+        return RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data, converted_output_path, converted_output_path2
+    else:
+        st.error("No pose landmarks detected in the video.")
+        return None, None, None, None, None, None, None, None
 
 ###### SECTION II: DATA WRANGLING ######
 
@@ -334,49 +276,48 @@ st.write("The most accurate results shall be obtained from an ideal video contai
 uploaded_file = st.file_uploader("Upload an MP4 File Containing a Person Walking.", type=["mp4"])
 
 if uploaded_file is not None:
-    # Create temporary file paths
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4v") as input_tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as input_tmp:
         input_tmp.write(uploaded_file.read())
         input_video_path = input_tmp.name
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4v") as output_tmp1:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as output_tmp1:
         output_video_path = output_tmp1.name
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4v") as output_tmp2:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as output_tmp2:
         output_video_path2 = output_tmp2.name
 
-    # Process the video
-    RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data = process_video(input_video_path, output_video_path, output_video_path2)
+    RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data, converted_output_path, converted_output_path2 = process_video(
+        input_video_path, output_video_path, output_video_path2
+    )
 
-    # Display the processed video
-    st.subheader("Processed Video with all Pose Landmarks")
-    if os.path.exists(output_video_path):
-        with open(output_video_path, "rb") as f:
-            video_bytes = f.read()
-        st.write("Click the button below to download the processed video.")
-        st.download_button(
-            label="Download Video with All Pose Landmarks",
-            data=video_bytes,
-            file_name="processed_video_landmarks.mp4",
-            mime="video/mp4"
-        )
-    else:
-        st.error("Processed video (landmarks) not generated correctly.")
+    if RTOEy is not None:
+        st.subheader("Processed Video with All Pose Landmarks")
+        if os.path.exists(converted_output_path) and os.path.getsize(converted_output_path) > 0:
+            with open(converted_output_path, "rb") as f:
+                video_bytes = f.read()
+            st.write("Click the button below to download the processed video.")
+            st.download_button(
+                label="Download Video with All Pose Landmarks",
+                data=video_bytes,
+                file_name="processed_video_landmarks.mp4",
+                mime="video/mp4"
+            )
+        else:
+            st.error("Processed video (landmarks) is empty or not generated correctly.")
 
-    st.subheader("Processed Video with Noise Corrected")
-    st.write('Frames where landmarks are not detected are removed from the video.')
-    if os.path.exists(output_video_path2):
-        with open(output_video_path2, "rb") as f:
-            video_bytes2 = f.read()
-        st.write("Click the button below to download the processed video.")
-        st.download_button(
-            label="Download Video with Noise Corrected",
-            data=video_bytes2,
-            file_name="processed_video_noise_corrected.mp4",
-            mime="video/mp4"
-        )
-    else:
-        st.error("Processed video (noise corrected) not generated correctly.")
+        st.subheader("Processed Video with Noise Corrected")
+        if os.path.exists(converted_output_path2) and os.path.getsize(converted_output_path2) > 0:
+            with open(converted_output_path2, "rb") as f:
+                video_bytes2 = f.read()
+            st.write("Click the button below to download the processed video.")
+            st.download_button(
+                label="Download Video with Noise Corrected",
+                data=video_bytes2,
+                file_name="processed_video_noise_corrected.mp4",
+                mime="video/mp4"
+            )
+        else:
+            st.error("Processed video (noise corrected) is empty or not generated correctly.")
 
     st.subheader("Right Toe Y-Coordinate Analysis")
     st.write('Further analysis by tracking movement of the right toe.')
