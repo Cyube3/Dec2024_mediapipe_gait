@@ -9,7 +9,6 @@ from scipy.interpolate import UnivariateSpline
 from scipy.fftpack import fft, ifft
 import scipy.signal as sps
 import tempfile # To handle temporary file storage
-import ffmpeg
 
 ###### SECTION I: COMPUTER VISION -MEDIAPIPE POSE CODE BASE ######
 # Function to detect and replace sudden jumps in the signal data
@@ -199,29 +198,10 @@ def process_video(input_path, output_path, output_path2):
         out2.write(frame2)
         i += 1
 
-    def convert_to_mp4(input_file, output_file):
-        try:
-            stream = ffmpeg.input(input_file)
-            stream = ffmpeg.output(stream, output_file, vcodec='h264', acodec='aac', format='mp4')
-            ffmpeg.run(stream, overwrite_output=True, capture_stdout=True, capture_stderr=True)
-            st.write(f"Successfully converted {input_file} to {output_file}")
-            return output_file
-        except ffmpeg.Error as e:
-            st.error(f"FFmpeg conversion failed: {e.stderr.decode() if e.stderr else str(e)}")
-            st.warning(f"Falling back to original file: {input_file}")
-            return input_file  # Fallback to original XVID file
-
-    converted_output_path = output_path.replace('.mp4', '_converted.mp4')
-    converted_output_path2 = output_path2.replace('.mp4', '_converted.mp4')
-    final_output_path = convert_to_mp4(output_path, converted_output_path)
-    final_output_path2 = convert_to_mp4(output_path2, converted_output_path2)
-
     st.write(f"Total frames processed: {frame_count}")
     st.write(f"Frames with landmarks: {len(frames_with_landmarks)}")
-    st.write(f"Output video 1 size (before conversion): {os.path.getsize(output_path)} bytes")
-    st.write(f"Output video 2 size (before conversion): {os.path.getsize(output_path2)} bytes")
-    st.write(f"Final video 1 size: {os.path.getsize(final_output_path)} bytes")
-    st.write(f"Final video 2 size: {os.path.getsize(final_output_path2)} bytes")
+    st.write(f"Video 1 size: {os.path.getsize(output_path)} bytes")
+    st.write(f"Video 2 size: {os.path.getsize(output_path2)} bytes")
 
     angles_data = pd.DataFrame(angles_data)
     cap.release()
@@ -230,7 +210,7 @@ def process_video(input_path, output_path, output_path2):
     cv2.destroyAllWindows()
 
     if not angles_data.empty:
-        return RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data, final_output_path, final_output_path2
+        return RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data, output_path, output_path2
     else:
         st.error("No pose landmarks detected in the video.")
         return None, None, None, None, None, None, None, None
@@ -281,10 +261,10 @@ if uploaded_file is not None:
         input_tmp.write(uploaded_file.read())
         input_video_path = input_tmp.name
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as output_tmp1:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".avi") as output_tmp1:
         output_video_path = output_tmp1.name
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as output_tmp2:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".avi") as output_tmp2:
         output_video_path2 = output_tmp2.name
 
     RTOEy, LTOEy, fRTOEy, fLTOEy, fps, angles_data, final_output_path, final_output_path2 = process_video(
@@ -296,12 +276,12 @@ if uploaded_file is not None:
         if os.path.exists(final_output_path) and os.path.getsize(final_output_path) > 0:
             with open(final_output_path, "rb") as f:
                 video_bytes = f.read()
-            st.write("Click the button below to download the processed video.")
+            st.write("Click the button below to download the processed video (AVI format).")
             st.download_button(
                 label="Download Video with All Pose Landmarks",
                 data=video_bytes,
-                file_name="processed_video_landmarks.mp4" if final_output_path.endswith('_converted.mp4') else "processed_video_landmarks.avi",
-                mime="video/mp4" if final_output_path.endswith('_converted.mp4') else "video/x-msvideo"
+                file_name="processed_video_landmarks.avi",
+                mime="video/x-msvideo"
             )
         else:
             st.error("Processed video (landmarks) is empty or not generated correctly.")
@@ -310,12 +290,12 @@ if uploaded_file is not None:
         if os.path.exists(final_output_path2) and os.path.getsize(final_output_path2) > 0:
             with open(final_output_path2, "rb") as f:
                 video_bytes2 = f.read()
-            st.write("Click the button below to download the processed video.")
+            st.write("Click the button below to download the processed video (AVI format).")
             st.download_button(
                 label="Download Video with Noise Corrected",
                 data=video_bytes2,
-                file_name="processed_video_noise_corrected.mp4" if final_output_path2.endswith('_converted.mp4') else "processed_video_noise_corrected.avi",
-                mime="video/mp4" if final_output_path2.endswith('_converted.mp4') else "video/x-msvideo"
+                file_name="processed_video_noise_corrected.avi",
+                mime="video/x-msvideo"
             )
         else:
             st.error("Processed video (noise corrected) is empty or not generated correctly.")
