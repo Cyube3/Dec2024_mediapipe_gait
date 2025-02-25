@@ -454,7 +454,7 @@ if uploaded_file is not None:
     mean_cycle = np.mean(normalized_cycles, axis=0)
     std_cycle = np.std(normalized_cycles, axis=0)
 
-    st.write("A 'Single Gait Cycle' is defined as 'Heel Strike' to 'Terminal Swing' below.")
+    st.write("A 'Single Gait Cycle' is defined as 'Heel Strike' to 'Toe Off' below.")
 
     # Hip angles plot
     with st.expander("Click to Show Graph: Hip Flexion-Extension Across a Single Gait Cycle"):
@@ -469,7 +469,7 @@ if uploaded_file is not None:
         ax.set_title("Hip Angle Progression Across a Single Gait Cycle")
         ax.legend()
         st.pyplot(fig)
-        st.write("Note: From Heel Strike (0%) to Terminal Swing (100%)")
+        st.write("Note: From Heel Strike (0%) to Toe Off (100%)")
 
     # Knee angles: Normalize to percentage gait cycle
     normalized_cycles = normalize_to_gait_cycle(angles_data['Knee Flexion-Extension (deg)'], peaks)
@@ -489,7 +489,7 @@ if uploaded_file is not None:
         ax.set_title("Knee Angle Progression Across a Single Gait Cycle")
         ax.legend()
         st.pyplot(fig)
-        st.write("Note: From Heel Strike (0%) to Terminal Swing (100%)")
+        st.write("Note: From Heel Strike (0%) to Toe Off (100%)")
 
     # Ankle angles: Normalize to percentage gait cycle
     normalized_cycles = normalize_to_gait_cycle(angles_data['Ankle Dorsiflexion-Plantarflexion (deg)'], peaks)
@@ -509,7 +509,7 @@ if uploaded_file is not None:
         ax.set_title("Ankle Angle Progression Across a Single Gait Cycle")
         ax.legend()
         st.pyplot(fig)
-        st.write("Note: From Heel Strike (0%) to Terminal Swing (100%)")
+        st.write("Note: From Heel Strike (0%) to Toe Off (100%)")
 
     ### GAIT SYMMETRY USING ROBINSON INDEX ###
     st.subheader("Gait Symmetry using Robinson Index")
